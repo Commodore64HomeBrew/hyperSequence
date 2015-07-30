@@ -109,15 +109,8 @@ static const unsigned char MouseSprite[64] = {
 
 
 
-
-
-
-
-
 //
 // Functions
-
-
 
 
 void pchar( unsigned char charin ){
@@ -125,9 +118,6 @@ void pchar( unsigned char charin ){
   putchar(charin);
 
 }
-
-
-
 
 
 /******************************************************************************/
@@ -138,7 +128,7 @@ unsigned char screenRender( int indx )
 
   int i;
   int x;
-  char tag_buf[6];
+  char tag_buf[7];
   char tag_href[] = "A HREF";
 
 
@@ -155,6 +145,8 @@ unsigned char screenRender( int indx )
       for (x=0; x < 6; x++){
         tag_buf[x]=sRecvBuf[x+i];
       }
+      tag_buf[x+1]='\0';
+
       puts(tag_buf);
       puts(tag_href);
       //Check for "href" tag
@@ -190,7 +182,6 @@ unsigned char screenRender( int indx )
       }
     }
     //<a href="http://www.w3schools.com">Visit W3Schools.com!</a>
-
 
     pchar(sRecvBuf[i++]);
     //putchar(sRecvBuf[i++]);
