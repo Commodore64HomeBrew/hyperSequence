@@ -1,0 +1,179 @@
+/**
+* The MIT License (MIT)
+* 
+* Copyright (c) 2013 Retroswitch LLC
+* 
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+* 
+* The above copyright notice and this permission notice shall be included in
+* all copies or substantial portions of the Software.
+* 
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+* THE SOFTWARE.
+*
+*/
+
+//
+// Includes
+#include <cbm.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <conio.h>
+#include "RsTypes.h"
+#include <peekpoke.h>
+
+#define bufSize 10000
+
+#define PETSCII_STOP  0x03
+#define PETSCII_RUN   0x83
+
+#define PETSCII_F1  0x85
+#define PETSCII_F2  0x89
+#define PETSCII_F3  0x86
+#define PETSCII_F4  0x8a
+#define PETSCII_F5  0x87
+#define PETSCII_F6  0x8b
+#define PETSCII_F7  0x88
+#define PETSCII_F8  0x8c
+
+
+
+static int screenH = 23;
+static int screenW = 40;
+
+
+static uint8_t sRecvBuf[bufSize] ;
+static uint8_t sRunning = 1;
+//
+// Functions
+
+
+/******************************************************************************/
+/* AppNetRead                                                                 */
+/******************************************************************************/
+
+/*int AppNetRead( uint8_t* pBuffer, int pMaxLength )
+{
+  return( cbm_read( 2, pBuffer, pMaxLength ) );
+}*/
+
+/******************************************************************************/
+/* AppNetWrite                                                                */
+/******************************************************************************/
+
+/*int AppNetWrite( const uint8_t* pBuffer, int pLength )
+{
+  return( cbm_write( 2, pBuffer, pLength ) );
+}*/
+
+
+int screenRender( int indx)
+{
+  int i;
+  i=indx;
+  clrscr();
+  while(wherey() <= screenH){
+    putchar((char)sRecvBuf[i++]);
+    //cputc((char)sRecvBuf[i++]);
+  }
+  return(i - indx); 
+}
+
+
+int main( void )
+{
+  char buf[64];
+  int i = 0;
+  int bufIndx;
+  int pageCnt;
+
+
+  bgcolor (0);
+  bordercolor (0);
+
+  clrscr ();
+  chline (40);
+
+  printf ("URL:"); fflush (stdout);
+  fgets (buf, sizeof (buf), stdin);
+  chline (40);
+  
+  if( cbm_open( 7, 7, 15, "" ) != 0 )
+  {
+    printf("Can't connect!");
+  }
+
+  //sprintf( buf, "http:%s",buf);
+  sprintf( buf, "http:www.commodorefree.com/magazine/vol8/issue85.seq");
+
+
+  if( cbm_open( 2, 7, 2, buf ) != 0 )
+  {
+    printf("Can't get stream!");
+  }
+
+
+  cbm_write( 7, "http-transact:2",15);
+
+  cbm_read( 2, sRecvBuf, sizeof(sRecvBuf));
+
+  //POKE (0xD018, 0x15);
+  //puts(sRecvBuf);
+  //printf("x:%d y:%d",wherex(),wherey());
+
+
+
+
+  bufIndx=0;
+  pageCnt = screenRender(bufIndx);
+
+  while( sRunning )
+  {
+
+    if( kbhit() )
+    {
+      uint8_t pet = cgetc();
+
+      switch( pet )
+      {
+        case PETSCII_F1:
+
+          bufIndx = bufIndx - pageCnt;
+          if(bufIndx <0){bufIndx=0;}
+          pageCnt = screenRender(bufIndx);
+          break;
+
+        case PETSCII_F7:
+          bufIndx = bufIndx + pageCnt;
+          if(bufIndx > bufSize){bufIndx=bufSize-pageCnt;}
+          pageCnt = screenRender(bufIndx);
+          break;
+
+      }
+    }
+
+  }
+
+
+
+
+
+
+  
+  cbm_close( 2 );
+  cbm_close( 7 );
+
+
+  return(printf("new:load\"*\",8,1:run"));
+}
